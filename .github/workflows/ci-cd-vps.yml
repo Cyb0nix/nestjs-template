@@ -1,0 +1,31 @@
+name: Continuous Integration-Continuous Deployment
+
+on:
+  push:
+    branches:
+      - preprod
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Continuous Integration
+    steps:
+      - uses: actions/checkout@v4.1.4
+      - uses: actions/setup-node@v4.0.2
+        with:
+          node-version: 18
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+  deploy:
+    runs-on: ubuntu-latest
+    name: Continuous Deployment
+    needs: [build]
+    steps:
+      - name: Deploy using ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          script: |
+            cd ICanFlyBack;docker stop icanfly_server;docker rm icanfly_server;git pull;docker-compose build;docker-compose up -d
